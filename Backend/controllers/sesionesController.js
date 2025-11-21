@@ -1,65 +1,117 @@
-const db = require('../models');
-const { Sesion, Tarea, sequelize } = db;
-const { Op } = require('sequelize');
-
-// Factores de dificultad para cálculos
-const DIFICULTAD_FACTORES = [0.6, 0.8, 1.0, 1.4, 1.7];
-
-// Función auxiliar para calcular días entre fechas
-const diasEntre = (start, end) => {
-    const oneDay = 1000 * 60 * 60 * 24;
-    const diffTime = new Date(end) - new Date(start);
-    return Math.round(diffTime / oneDay);
-};
 
 // =======================================================
 // CONTROLADOR PRINCIPAL - VERSIÓN CORREGIDA
 // =======================================================
 
-exports.crearSesion = async (req, res) => {
-  const { nombre, fecha_examen, duracion_diaria_estimada } = req.body;
+const db = require('../models');
+const { Sesion, Tarea, sequelize } = db;
+const { Op } = require('sequelize');
 
-  if (!nombre || !fecha_examen || !duracion_diaria_estimada) {
-    return res.status(400).json({
-      message: "Faltan campos obligatorios: nombre, fecha_examen, duracion_diaria_estimada"
-    });
-  }
+// Factores de dificultad (Usados también en el hook beforeValidate de Tarea)
+const DIFICULTAD_FACTORES = [0.6, 0.8, 1.0, 1.4, 1.7];
 
-  try {
-    // 1. Convertir la fecha_examen a Date object
-    const fechaExamenDate = new Date(fecha_examen);
-    
-    // 2. Obtener la fecha actual (sin horas/minutos/segundos)
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    
-    // 3. Comparación simple - asegurarse de que la fecha de examen es futura
-    //if (fechaExamenDate < hoy) {
-    //  return res.status(400).json({
-     //   message: `La fecha de examen debe ser futura. Fecha examen: ${fechaExamenDate.toISOString().split('T')[0]}, Hoy: ${hoy.toISOString().split('T')[0]}`
-    //  });
-    //}
-
-    // 4. Si pasa la validación, continuar con el resto del código...
-    console.log("✅ Fecha válida - continuando con la creación de la sesión");
-    
-    // ... aquí va el resto de tu lógica para crear la sesión y tareas
-
-    res.status(201).json({
-      message: "Sesión creada exitosamente",
-      // ... otros datos de respuesta
-    });
-
-  } catch (error) {
-    console.error("Error al crear sesión:", error);
-    res.status(500).json({ 
-      message: "Error interno al crear sesión", 
-      error: error.message 
-    });
-  }
+// Función auxiliar para calcular días entre fechas
+const diasEntre = (start, end) => {
+    const oneDay = 1000 * 60 * 60 * 24;
+    const diffTime = new Date(end) - new Date(start);
+    // +1 para incluir el día de inicio
+    return Math.round(diffTime / oneDay) + 1; 
 };
 
 
+// =======================================================
+// CONTROLADOR PRINCIPAL - VERSIÓN FINAL CON CÁLCULO AUTOMÁTICO
+// =======================================================
+
+exports.crearSesion = async (req, res) => {
+    // ⚠️ YA NO SE RECIBE duracion_total_estimada EN EL BODY
+    const { nombre, fecha_examen, duracion_diaria_estimada, dificultad_por_defecto = 3 } = req.body;
+
+    // ⚠️ Se ajusta la validación de campos obligatorios
+    if (!nombre || !fecha_examen || !duracion_diaria_estimada) {
+        return res.status(400).json({
+            message: "Faltan campos obligatorios: nombre, fecha_examen, duracion_diaria_estimada"
+        });
+    }
+    
+    const t = await sequelize.transaction();
+
+    try {
+        const fechaExamenDate = new Date(fecha_examen);
+        const fechaInicio = new Date();
+        fechaInicio.setHours(0, 0, 0, 0);
+        
+        // 1. Validación y Cálculo de Días Disponibles
+        if (fechaExamenDate < fechaInicio) {
+            await t.rollback();
+            return res.status(400).json({
+                message: "La fecha de examen debe ser hoy o futura."
+            });
+        }
+
+        // Días totales, incluyendo hoy y el día del examen
+        const diasTotales = diasEntre(fechaInicio, fechaExamenDate);
+        // Días disponibles para estudiar (excluyendo el día del examen)
+        const diasDisponibles = diasTotales > 1 ? diasTotales - 1 : 1; 
+        
+        // 🚀 CÁLCULO AUTOMÁTICO DE LA DURACIÓN TOTAL ESTIMADA
+        const duracionTotalEstimada = duracion_diaria_estimada * diasDisponibles;
+
+        // 2. Crear la Sesión principal
+        const nuevaSesion = await Sesion.create({
+            nombre,
+            fecha_examen: fechaExamenDate,
+            duracion_diaria_estimada: duracion_diaria_estimada,
+            duracion_total_estimada: duracionTotalEstimada, // ⬅️ USAMOS EL VALOR CALCULADO
+            es_completada: false
+        }, { transaction: t });
+
+        // 3. Planificación de Tareas (Lógica mantenida, pero ahora usando el valor calculado)
+        let tiempoRestante = duracionTotalEstimada;
+        let tareasProgramadas = [];
+        let fechaActual = new Date(fechaInicio);
+        
+        for (let i = 0; i < diasDisponibles; i++) {
+            if (tiempoRestante <= 0) break;
+
+            // La duración programada es el límite diario, ya que el cálculo total es un múltiplo de este
+            const duracionProgramada = Math.min(
+                duracion_diaria_estimada, 
+                tiempoRestante 
+            );
+            
+            tareasProgramadas.push({
+                sesion_id: nuevaSesion.id,
+                nombre: `Tarea Día ${i + 1} de ${nombre}`, 
+                fecha_programada: new Date(fechaActual).toISOString().split('T')[0],
+                duracion_estimada: duracionProgramada,
+                dificultad_nivel: dificultad_por_defecto,
+                es_completada: false,
+            });
+
+            tiempoRestante -= duracionProgramada;
+            fechaActual.setDate(fechaActual.getDate() + 1); 
+        }
+        
+        // 4. Crear las tareas en la base de datos y Commit
+        await Tarea.bulkCreate(tareasProgramadas, { transaction: t });
+        await t.commit();
+
+        res.status(201).json({
+            message: "Sesión y tareas diarias creadas exitosamente",
+            sesion: nuevaSesion,
+            tareasCreadas: tareasProgramadas.length
+        });
+
+    } catch (error) {
+        await t.rollback();
+        console.error("Error al crear sesión:", error);
+        res.status(500).json({ 
+            message: "Error interno al crear sesión", 
+            error: error.message 
+        });
+    }
+};
 
 
 // =======================================================
@@ -116,8 +168,8 @@ exports.obtenerTodasLasSesiones = async (req, res) => {
         const sesiones = await Sesion.findAll({
             include: [{ model: Tarea, as: 'tareas' }],
             order: [
-                ['fecha_programada', 'ASC'],
-                [{ model: Tarea, as: 'tareas' }, 'fecha_programada', 'ASC']
+                ['fecha_examen', 'ASC'],
+                [{ model: Tarea, as: 'tareas' }, 'fecha_examen', 'ASC']
             ]
         });
 
@@ -183,10 +235,10 @@ exports.obtenerSesionActiva = async (req, res) => {
         const sesionActual = await Sesion.findOne({
             where: {
                 es_completada: false,
-                fecha_programada: { [Op.gte]: hoy }
+                fecha_examen: { [Op.gte]: hoy }
             },
             include: [{ model: Tarea, as: 'tareas' }],
-            order: [['fecha_programada', 'ASC']]
+            order: [['fecha_examen', 'ASC']]
         });
 
         const historial = await Sesion.findAll({
@@ -194,10 +246,11 @@ exports.obtenerSesionActiva = async (req, res) => {
                 es_completada: true
             },
             include: [{ model: Tarea, as: 'tareas' }],
-            order: [['fecha_programada', 'DESC']],
+            order: [['fecha_examen', 'DESC']],
             limit: 10
         });
 
+    
         res.status(200).json({
             sesionActual,
             historial
@@ -314,10 +367,10 @@ exports.obtenerTareaDelDia = async (req, res) => {
         const sesionActiva = await Sesion.findOne({
             where: {
                 es_completada: false,
-                fecha_programada: { [Op.gte]: hoy }
+                fecha_examen: { [Op.gte]: hoy }
             },
             include: [{ model: Tarea, as: 'tareas' }],
-            order: [['fecha_programada', 'ASC']]
+            order: [['fecha_examen', 'ASC']]
         });
 
         if (!sesionActiva) {
@@ -332,7 +385,7 @@ exports.obtenerTareaDelDia = async (req, res) => {
         const tareaHoy = await Tarea.findOne({
             where: {
                 sesion_id: sesionActiva.id,
-                fecha_programada: hoy,
+                fecha_examen: hoy,
                 es_completada: false
             },
             include: [{ model: Sesion, as: 'sesion' }],
@@ -343,12 +396,12 @@ exports.obtenerTareaDelDia = async (req, res) => {
             const proximaTarea = await Tarea.findOne({
                 where: {
                     sesion_id: sesionActiva.id,
-                    fecha_programada: { [Op.gte]: hoy },
+                    fecha_examen: { [Op.gte]: hoy },
                     es_completada: false
                 },
                 include: [{ model: Sesion, as: 'sesion' }],
                 order: [
-                    ['fecha_programada', 'ASC'],
+                    ['fecha_examen', 'ASC'],
                     ['id', 'ASC']
                 ]
             });

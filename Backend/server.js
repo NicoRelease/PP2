@@ -43,7 +43,7 @@ const inicializarBD = async () => {
 };
 
 // Rutas
-app.use('/api', require('./routes/sesiones.routes'));
+app.use('/api', require('./routes/Sesiones.routes'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
