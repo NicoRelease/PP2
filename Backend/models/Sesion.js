@@ -15,9 +15,9 @@ module.exports = (sequelize) => {
         len: { args: [3, 100], msg: 'El nombre debe tener entre 3 y 100 caracteres' }
       }
     },
-    fecha_programada: { 
+    fecha_examen: { 
       type: DataTypes.DATEONLY, 
-      allowNull: false,
+      allowNull: true,
       validate: {
         isDate: { msg: 'La fecha debe ser válida' },
         isAfter: { args: new Date().toISOString().split('T')[0], msg: 'Controller: La fecha debe ser futura' }
