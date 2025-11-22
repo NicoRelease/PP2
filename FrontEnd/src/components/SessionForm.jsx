@@ -51,9 +51,9 @@ const NewSessionForm = ({ onSesionCreada }) => {
         const nombreSesion = response.data.sesion.nombre;
         const tareasCreadas = response.data.tareasCreadas || response.data.sesion.tareas?.length || 0;
         const totalMinutos = response.data.sesion.duracion_total_estimada;
-        mensajeExito = `✅ Sesión '${nombreSesion}' (${totalMinutos} min total) planificada con éxito! Se crearon ${tareasCreadas} tareas.`;
+        //mensajeExito = `✅ Sesión '${nombreSesion}' (${totalMinutos} min total) planificada con éxito! Se crearon ${tareasCreadas} tareas.`;
       } else if (response.data.nombre) {
-        mensajeExito = `✅ Sesión '${response.data.nombre}' creada exitosamente!`;
+        //mensajeExito = `✅ Sesión '${response.data.nombre}' creada exitosamente!`;
       }
       
       alert(mensajeExito);
