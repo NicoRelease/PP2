@@ -20,7 +20,7 @@ module.exports = (sequelize) => {
       allowNull: true,
       validate: {
         isDate: { msg: 'La fecha debe ser válida' },
-        isAfter: { args: new Date().toISOString().split('T')[0], msg: 'Controller: La fecha debe ser futura' }
+        //isAfter: { args: new Date().toISOString().split('T')[0], msg: 'Controller: La fecha debe ser futura' }
       }
     },
     es_completada: { 

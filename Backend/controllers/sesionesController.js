@@ -29,13 +29,16 @@ exports.crearSesion = async (req, res) => {
         });
     }
     
+
     const t = await sequelize.transaction();
 
     try {
-        const fechaExamenDate = new Date(fecha_examen);
-        const fechaInicio = new Date();
-        fechaInicio.setHours(0, 0, 0, 0); // Normalizar la fecha de inicio a medianoche
+        const fechaExamenDate = new Date(fecha_examen).toISOString().split('T')[0];
         
+
+        const fechaInicio = new Date().toISOString().split('T')[0];
+        fechaInicio;
+        console.log(`Las fechas para la comparación son: de inicio ${fechaInicio} y de examen ${fechaExamenDate}`);
         // 1. Validación y Cálculo de Días Disponibles
         if (fechaExamenDate < fechaInicio) {
             await t.rollback();
