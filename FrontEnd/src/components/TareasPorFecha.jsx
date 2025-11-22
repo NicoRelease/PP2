@@ -12,7 +12,7 @@ const TareasPorFecha = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTare
         sesionPadre: {
           id: sesion.id,
           nombre: sesion.nombre,
-          fecha_examen: sesion.fecha_programada
+          fecha_examen: sesion.fecha_examen
         }
       }))
     );
