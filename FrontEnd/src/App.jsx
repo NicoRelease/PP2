@@ -1,11 +1,11 @@
-// App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import SessionForm from './components/SessionForm';
-import GestorEstudio from './components/GestorEstudio'; // ✅ Nuevo componente principal
+// REVERTIDO: Asumiendo que los componentes se encuentran en la carpeta './components' (la estructura original del usuario)
+import SessionForm from './components/SessionForm'; 
+import GestorEstudio from './components/GestorEstudio'; // ✅ Componente principal
 import TareaManager from './components/TareaManager';
 import SessionDetail from './components/SessionDetail';
-import './App.css';
+// Nota: Se omite cualquier importación de CSS si no está disponible.
 
 function App() {
   return (
@@ -20,8 +20,8 @@ function App() {
             <Link to="/gestor-estudio" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
               📊 Gestor de Estudio
             </Link>
-            <Link to="/gestionar-sesion" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
-              ⚙️ Gestionar Tarea
+            <Link to="/gestor-estudio" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
+              ⚙️ Gestionar Tareas
             </Link>
           </nav>
         </header>
@@ -29,8 +29,11 @@ function App() {
         <main style={{ padding: '20px' }}>
           <Routes>
             <Route path="/" element={<SessionForm />} />
-            <Route path="/gestor-estudio" element={<GestorEstudio />} /> {/* ✅ Nueva ruta */}
-            <Route path="/gestionar-sesion/:sessionId?" element={<TareaManager />} />
+            <Route path="/gestor-estudio" element={<GestorEstudio />} /> {/* Ruta de vista general */}
+            
+            {/* RUTA DINÁMICA: Coincide con /tareas/69 y usa el parámetro :tareaId */}
+            <Route path="/tareas/:tareaId" element={<TareaManager />} />
+            
             <Route path="/session/:id" element={<SessionDetail />} />
           </Routes>
         </main>

@@ -1,8 +1,3 @@
-
-// =======================================================
-// CONTROLADOR PRINCIPAL - VERSIÓN CORREGIDA
-// =======================================================
-
 const db = require('../models');
 const { Sesion, Tarea, sequelize } = db;
 const { Op } = require('sequelize');
@@ -12,10 +7,10 @@ const DIFICULTAD_FACTORES = [0.6, 0.8, 1.0, 1.4, 1.7];
 
 // Función auxiliar para calcular días entre fechas
 const diasEntre = (start, end) => {
-    const oneDay = 1000 * 60 * 60 * 24;
-    const diffTime = new Date(end) - new Date(start);
-    // +1 para incluir el día de inicio
-    return Math.round(diffTime / oneDay) + 1; 
+    const oneDay = 1000 * 60 * 60 * 24;
+    const diffTime = new Date(end) - new Date(start);
+    // +1 para incluir el día de inicio
+    return Math.round(diffTime / oneDay) + 1; 
 };
 
 
@@ -24,98 +19,101 @@ const diasEntre = (start, end) => {
 // =======================================================
 
 exports.crearSesion = async (req, res) => {
-    // ⚠️ YA NO SE RECIBE duracion_total_estimada EN EL BODY
-    const { nombre, fecha_examen, duracion_diaria_estimada, dificultad_por_defecto = 3 } = req.body;
+    // Los campos requeridos del front son: nombre, fecha_examen, duracion_diaria_estimada
+    const { nombre, fecha_examen, duracion_diaria_estimada, dificultad_por_defecto = 3 } = req.body;
 
-    // ⚠️ Se ajusta la validación de campos obligatorios
-    if (!nombre || !fecha_examen || !duracion_diaria_estimada) {
-        return res.status(400).json({
-            message: "Faltan campos obligatorios: nombre, fecha_examen, duracion_diaria_estimada"
-        });
-    }
+    // ⚠️ Se ajusta la validación de campos obligatorios
+    if (!nombre || !fecha_examen || !duracion_diaria_estimada) {
+        return res.status(400).json({
+            message: "Faltan campos obligatorios: nombre, fecha_examen, duracion_diaria_estimada"
+        });
+    }
     
-    const t = await sequelize.transaction();
+    const t = await sequelize.transaction();
 
-    try {
-        const fechaExamenDate = new Date(fecha_examen);
-        const fechaInicio = new Date();
-        fechaInicio.setHours(0, 0, 0, 0);
-        
-        // 1. Validación y Cálculo de Días Disponibles
-        if (fechaExamenDate < fechaInicio) {
-            await t.rollback();
-            return res.status(400).json({
-                message: "La fecha de examen debe ser hoy o futura."
-            });
-        }
+    try {
+        const fechaExamenDate = new Date(fecha_examen);
+        const fechaInicio = new Date();
+        fechaInicio.setHours(0, 0, 0, 0); // Normalizar la fecha de inicio a medianoche
+        
+        // 1. Validación y Cálculo de Días Disponibles
+        if (fechaExamenDate < fechaInicio) {
+            await t.rollback();
+            return res.status(400).json({
+                message: "La fecha de examen debe ser hoy o futura."
+            });
+        }
 
-        // Días totales, incluyendo hoy y el día del examen
-        const diasTotales = diasEntre(fechaInicio, fechaExamenDate);
-        // Días disponibles para estudiar (excluyendo el día del examen)
-        const diasDisponibles = diasTotales > 1 ? diasTotales - 1 : 1; 
+        // Días totales, incluyendo hoy y el día del examen
+        const diasTotales = diasEntre(fechaInicio, fechaExamenDate);
+        // Días disponibles para estudiar (excluyendo el día del examen)
+        const diasDisponibles = diasTotales > 1 ? diasTotales - 1 : 1; 
         
         // 🚀 CÁLCULO AUTOMÁTICO DE LA DURACIÓN TOTAL ESTIMADA
         const duracionTotalEstimada = duracion_diaria_estimada * diasDisponibles;
 
         // 2. Crear la Sesión principal
-        const nuevaSesion = await Sesion.create({
-            nombre,
-            fecha_examen: fechaExamenDate,
-            duracion_diaria_estimada: duracion_diaria_estimada,
-            duracion_total_estimada: duracionTotalEstimada, // ⬅️ USAMOS EL VALOR CALCULADO
-            es_completada: false
-        }, { transaction: t });
+        // CORRECCIÓN CLAVE: Incluir fecha_programada, que es la fechaInicio (hoy)
+        const nuevaSesion = await Sesion.create({
+            nombre,
+            fecha_examen: fechaExamenDate,
+            duracion_diaria_estimada: duracion_diaria_estimada,
+            duracion_total_estimada: duracionTotalEstimada,
+            es_completada: false,
+            fecha_programada: fechaInicio // ⬅️ SOLUCIÓN: Usar la fecha calculada en el backend
+        }, { transaction: t });
 
-        // 3. Planificación de Tareas (Lógica mantenida, pero ahora usando el valor calculado)
-        let tiempoRestante = duracionTotalEstimada;
-        let tareasProgramadas = [];
-        let fechaActual = new Date(fechaInicio);
-        
-        for (let i = 0; i < diasDisponibles; i++) {
-            if (tiempoRestante <= 0) break;
+        // 3. Planificación de Tareas (Lógica mantenida, pero ahora usando el valor calculado)
+        let tiempoRestante = duracionTotalEstimada;
+        let tareasProgramadas = [];
+        let fechaActual = new Date(fechaInicio);
+        
+        for (let i = 0; i < diasDisponibles; i++) {
+            if (tiempoRestante <= 0) break;
 
-            // La duración programada es el límite diario, ya que el cálculo total es un múltiplo de este
-            const duracionProgramada = Math.min(
-                duracion_diaria_estimada, 
-                tiempoRestante 
-            );
-            
-            tareasProgramadas.push({
-                sesion_id: nuevaSesion.id,
-                nombre: `Tarea Día ${i + 1} de ${nombre}`, 
-                fecha_programada: new Date(fechaActual).toISOString().split('T')[0],
-                duracion_estimada: duracionProgramada,
-                dificultad_nivel: dificultad_por_defecto,
-                es_completada: false,
-            });
+            // La duración programada es el límite diario, ya que el cálculo total es un múltiplo de este
+            const duracionProgramada = Math.min(
+                duracion_diaria_estimada, 
+                tiempoRestante 
+            );
+            
+            tareasProgramadas.push({
+                sesion_id: nuevaSesion.id,
+                nombre: `Tarea Día ${i + 1} de ${nombre}`, 
+                fecha_programada: new Date(fechaActual).toISOString().split('T')[0],
+                duracion_estimada: duracionProgramada,
+                dificultad_nivel: dificultad_por_defecto,
+                es_completada: false,
+            });
 
-            tiempoRestante -= duracionProgramada;
-            fechaActual.setDate(fechaActual.getDate() + 1); 
-        }
-        
-        // 4. Crear las tareas en la base de datos y Commit
-        await Tarea.bulkCreate(tareasProgramadas, { transaction: t });
-        await t.commit();
+            tiempoRestante -= duracionProgramada;
+            fechaActual.setDate(fechaActual.getDate() + 1); 
+        }
+        
+        // 4. Crear las tareas en la base de datos y Commit
+        await Tarea.bulkCreate(tareasProgramadas, { transaction: t });
+        await t.commit();
 
-        res.status(201).json({
-            message: "Sesión y tareas diarias creadas exitosamente",
-            sesion: nuevaSesion,
-            tareasCreadas: tareasProgramadas.length
-        });
+        res.status(201).json({
+            message: "Sesión y tareas diarias creadas exitosamente",
+            sesion: nuevaSesion,
+            tareasCreadas: tareasProgramadas.length
+        });
 
-    } catch (error) {
-        await t.rollback();
-        console.error("Error al crear sesión:", error);
-        res.status(500).json({ 
-            message: "Error interno al crear sesión", 
-            error: error.message 
-        });
-    }
+    } catch (error) {
+        await t.rollback();
+        console.error("Error al crear sesión:", error);
+        res.status(500).json({ 
+            message: "Error interno al crear sesión", 
+            error: error.message 
+        });
+    }
 };
 
 
 // =======================================================
-// FUNCIÓN DE VALIDACIÓN (OPCIONAL)
+// RESTO DE FUNCIONES (MANTENER)
+// ... (El resto de las funciones se mantienen sin cambios)
 // =======================================================
 
 exports.validarFechaExamen = async (req, res) => {
@@ -158,10 +156,6 @@ exports.validarFechaExamen = async (req, res) => {
         });
     }
 };
-
-// =======================================================
-// RESTO DE FUNCIONES (MANTENER)
-// =======================================================
 
 exports.obtenerTodasLasSesiones = async (req, res) => {
     try {
@@ -429,4 +423,12 @@ exports.obtenerTareaDelDia = async (req, res) => {
         });
     }
 };
-0
+// El resto de funciones siguen igual
+exports.obtenerTareaDelDia = exports.obtenerTareaDelDia;
+exports.obtenerTareaPorId = exports.obtenerTareaPorId;
+exports.eliminarTarea = exports.eliminarTarea;
+exports.gestionarTarea = exports.gestionarTarea;
+exports.obtenerSesionActiva = exports.obtenerSesionActiva;
+exports.eliminarSesionCompleta = exports.eliminarSesionCompleta;
+exports.obtenerSesionPorId = exports.obtenerSesionPorId;
+exports.obtenerTodasLasSesiones = exports.obtenerTodasLasSesiones;
