@@ -41,7 +41,7 @@ const GestorEstudio = () => {
   // Funciones de manejo de eventos que se pasarán a los componentes hijos
   const handleTareaClick = (tarea, sesionPadre) => {
     console.log("📍 Navegando a gestionar tarea:", tarea.id, tarea.nombre);
-    navigate(`/gestionar-sesion/${tarea.id}`, { 
+    navigate(`/tareas/${tarea.id}`, { 
       state: { 
         tarea: tarea,
         sesion: sesionPadre
@@ -51,7 +51,7 @@ const GestorEstudio = () => {
 
   const handleSessionClick = (sesion) => {
     console.log("📍 Navegando a detalles de sesión:", sesion.id);
-    navigate(`/session/${sesion.id}`, { state: { sesion } });
+    navigate(`/${sesion.id}`, { state: { sesion } });
   };
 
   const handleDeleteSession = async (sessionId) => {

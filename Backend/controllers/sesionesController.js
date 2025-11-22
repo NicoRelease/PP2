@@ -168,8 +168,8 @@ exports.obtenerTodasLasSesiones = async (req, res) => {
         const sesiones = await Sesion.findAll({
             include: [{ model: Tarea, as: 'tareas' }],
             order: [
-                ['fecha_examen', 'ASC'],
-                [{ model: Tarea, as: 'tareas' }, 'fecha_examen', 'ASC']
+                ['fecha_programada', 'ASC'],
+                [{ model: Tarea, as: 'tareas' }, 'fecha_programada', 'ASC']
             ]
         });
 
@@ -238,7 +238,7 @@ exports.obtenerSesionActiva = async (req, res) => {
                 fecha_examen: { [Op.gte]: hoy }
             },
             include: [{ model: Tarea, as: 'tareas' }],
-            order: [['fecha_examen', 'ASC']]
+            order: [['fecha_programada', 'ASC']]
         });
 
         const historial = await Sesion.findAll({
@@ -246,7 +246,7 @@ exports.obtenerSesionActiva = async (req, res) => {
                 es_completada: true
             },
             include: [{ model: Tarea, as: 'tareas' }],
-            order: [['fecha_examen', 'DESC']],
+            order: [['fecha_programada', 'DESC']],
             limit: 10
         });
 
