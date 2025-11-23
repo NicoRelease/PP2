@@ -57,14 +57,14 @@ const TareaManager = () => {
           console.log('🔍 Cargando tarea específica:', tareaId);
           
           // PRIMERO: Intentar usar los datos del estado
-          if (state && state.tarea) {
-            console.log('📦 Usando tarea del estado:', state.tarea);
-            setTarea(state.tarea);
-            setSesion(state.sesion);
-            setModo('tarea-especifica');
-            setLoading(false);
-            return;
-          }
+          //if (state && state.tarea) {
+            //console.log('📦 Usando tarea del estado:', state.tarea);
+            //setTarea(state.tarea);
+            //setSesion(state.sesion);
+            //setModo('tarea-especifica');
+            //setLoading(false);
+            //return;
+         // }
           
           // SEGUNDO: Si no hay estado, hacer petición al backend
           const response = await axios.get(`${API_BASE_URL}/tareas/${tareaId}`);
@@ -93,7 +93,7 @@ const TareaManager = () => {
   React.useEffect(() => {
     if (estaActiva && !intervalId) {
       const id = setInterval(() => {
-        setTiempoTranscurrido(prev => prev + 1);
+        setTiempoTranscurrido(prev => prev);
       }, 1000);
       setIntervalId(id);
     } else if (!estaActiva && intervalId) {
