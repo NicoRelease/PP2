@@ -20,9 +20,6 @@ function App() {
             <Link to="/gestor-estudio" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
               📊 Gestor de Estudio
             </Link>
-            <Link to="/gestor-estudio" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
-              ⚙️ Gestionar Tareas
-            </Link>
           </nav>
         </header>
         

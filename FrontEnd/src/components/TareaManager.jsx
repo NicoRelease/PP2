@@ -121,7 +121,7 @@ const TareaManager = () => {
     try {
       console.log(`🎯 Ejecutando acción: ${accion} en tarea ${tarea.id}`);
       
-      const tiempoEjecutado = accion === 'stop' ? tiempoTranscurrido : 0;
+      const tiempoEjecutado = (accion === 'stop' || accion === 'pause') ? tiempoTranscurrido : 0;
       
       const response = await axios.post(`${API_BASE_URL}/tareas/${tarea.id}/gestionar`, {
         action: accion,
@@ -134,6 +134,7 @@ const TareaManager = () => {
         setTiempoTranscurrido(0);
       } else if (accion === 'pause') {
         setEstaActiva(false);
+        setTarea(response.data.tarea);
       } else if (accion === 'stop') {
         setEstaActiva(false);
         setTarea(response.data.tarea);
