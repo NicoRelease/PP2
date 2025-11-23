@@ -93,7 +93,7 @@ const TareaManager = () => {
   React.useEffect(() => {
     if (estaActiva && !intervalId) {
       const id = setInterval(() => {
-        setTiempoTranscurrido(prev => prev);
+        setTiempoTranscurrido(prev => prev+1);
       }, 1000);
       setIntervalId(id);
     } else if (!estaActiva && intervalId) {
