@@ -410,7 +410,7 @@ const TareaManager = () => {
           }}>
             <h4>📚 Sesión Padre</h4>
             <p><strong>Nombre:</strong> {sesion.nombre}</p>
-            <p><strong>Fecha de examen:</strong> {new Date(sesion.fecha_programada).toLocaleDateString()}</p>
+            <p><strong>Fecha de examen:</strong> {new Date(sesion.fecha_examen).toLocaleDateString()}</p>
           </div>
         )}
 
