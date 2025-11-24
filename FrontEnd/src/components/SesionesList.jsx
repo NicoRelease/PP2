@@ -40,7 +40,7 @@ const SesionesList = ({
             }}
           >
             <h4 style={{ margin: 0, cursor: 'pointer' }} onClick={() => onSessionClick(sesion)}>
-              {sesion.nombre} - {new Date(sesion.fecha_examen).toLocaleDateString()}
+              {sesion.nombre} - {sesion.fecha_examen}
             </h4>
             <button
               onClick={() => onDeleteSession(sesion.id)}
