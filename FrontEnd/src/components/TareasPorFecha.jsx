@@ -64,8 +64,22 @@ const TareasPorFecha = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTare
 
   const tareasPorFecha = agruparTareasPorFecha();
   const resumenGeneral = calcularResumenGeneral();
+
   const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0); // Normalizar a medianoche para comparación
+  const año = hoy.getFullYear();
+
+// Obtener el mes (getMonth() devuelve 0-11, así que sumamos 1)
+// Usamos padStart(2, '0') para asegurar dos dígitos
+const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+
+// Obtener el día del mes
+// Usamos padStart(2, '0') para asegurar dos dígitos
+const dia = String(hoy.getDate()).padStart(2, '0');
+
+// Concatenar para obtener el formato yyyy-mm-dd
+const fechahoyFormateada = `${año}-${mes}-${dia}`;
+
+console.log(`Formato fecha hoy: ${fechahoyFormateada}`);
 
   if (Object.keys(tareasPorFecha).length === 0) {
     return (

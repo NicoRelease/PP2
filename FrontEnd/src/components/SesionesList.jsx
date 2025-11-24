@@ -7,6 +7,9 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
   
   // 📌 Definir la fecha de hoy para la comparación de vencimiento
   const hoy = new Date();
+  const hoy1 = hoy.toISOString().split('T')[0];
+console.log(`Fecha hoy: ${hoy.toISOString()}`);
+console.log(`Fecha hoy1: ${hoy1}`);
 
 // Obtener el año
 const año = hoy.getFullYear();
@@ -56,6 +59,7 @@ console.log(`Formato fecha hoy: ${fechahoyFormateada}`);
 
     return agrupado;
   };
+
 
   // ============================================================
   // 📌 Resumen General (ahora basado en sesiones)
@@ -194,7 +198,7 @@ const fechaTareaFormateada = `${año}-${mes}-${dia}`;
 
 console.log(`Formato fecha formateada: ${fechaTareaFormateada}`);
 // Ejemplo de salida: "2025-11-24" (si hoy es 24 de noviembre de 2025)
-                  const esFechaPasada = fechaTareaFormateada < fechahoyFormateada;
+                  const esFechaPasada = fechaTareaFormateada < hoy1;
                   
                   return (
                     <div
