@@ -1,5 +1,6 @@
 // components/TareasPorFecha.jsx
 import React from 'react';
+import Conversion from './Conversion';
 
 const TareasPorFecha = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTarea }) => {
   // Función para agrupar tareas por fecha
@@ -240,7 +241,7 @@ const TareasPorFecha = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTare
                           display: 'inline-block'
                         }}>
                           {tarea.es_completada ? 
-                            `✅ ${tarea.tiempo_real_ejecucion || 0} min reales` : 
+                            `✅ ${Conversion(tarea.tiempo_real_ejecucion) || 0}` : 
                             (esFechaPasada ? '⏰ Fecha pasada' : '⏳ Pendiente')}
                         </div>
                       </div>

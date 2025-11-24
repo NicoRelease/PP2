@@ -1,5 +1,6 @@
 // components/SesionesList.jsx
 import React from 'react';
+import Conversion from './Conversion';
 
 const SesionesList = ({ 
   sesiones, 
@@ -80,7 +81,7 @@ const SesionesList = ({
                     <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
                       ⏱️ {tarea.duracion_estimada} min | 
                       {tarea.es_completada ? 
-                        `✅ Completada (${tarea.tiempo_real_ejecucion || 0} min)` : 
+                        `✅ Completada (${Conversion(tarea.tiempo_real_ejecucion) || 0})` : 
                         '⏳ Pendiente'}
                     </div>
                   </div>
