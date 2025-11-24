@@ -66,7 +66,12 @@ const TareasPorFecha = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTare
   const resumenGeneral = calcularResumenGeneral();
 
   const hoy = new Date();
-  const año = hoy.getFullYear();
+  const hoy1 = hoy.toISOString().split('T')[0];
+console.log(`Fecha hoy: ${hoy.toISOString()}`);
+console.log(`Fecha hoy1: ${hoy1}`);
+
+// Obtener el año
+const año = hoy.getFullYear();
 
 // Obtener el mes (getMonth() devuelve 0-11, así que sumamos 1)
 // Usamos padStart(2, '0') para asegurar dos dígitos
@@ -97,9 +102,15 @@ console.log(`Formato fecha hoy: ${fechahoyFormateada}`);
         
         {Object.entries(tareasPorFecha).map(([fecha, grupo]) => {
           // ✅ Verificar si la fecha es pasada
-          const fechaTarea = new Date(fecha);
-          fechaTarea.setHours(0, 0, 0, 0);
-          const esFechaPasada = fechaTarea < hoy;
+          const fechaString = new Date(fecha);
+          const fechaTarea = new Date(`${fechaString}T12:00:00`);
+          const año = fechaTarea.getFullYear();
+
+const mes = String(fechaTarea.getMonth() + 1).padStart(2, '0');
+const dia = String(fechaTarea.getDate()).padStart(2, '0');
+const fechaTareaFormateada = `${año}-${mes}-${dia}`;
+          const esFechaPasada = fechaTareaFormateada < hoy1;
+          console.log(`Fecha tarea: ${fechaTarea}, Es fecha de hoy: ${hoy1}`);
           
           return (
             <div
@@ -126,7 +137,7 @@ console.log(`Formato fecha hoy: ${fechahoyFormateada}`);
                 borderBottom: '2px solid #007bff'
               }}>
                 <h4 style={{ margin: 0, color: esFechaPasada ? '#6c757d' : '#007bff' }}>
-                  🗓️ {new Date(fecha).toLocaleDateString('es-ES', { 
+                  🗓️ {new Date(fecha+`T12:00:00`).toLocaleDateString('es-ES', { 
                     weekday: 'long', 
                     year: 'numeric', 
                     month: 'long', 
@@ -229,7 +240,12 @@ console.log(`Formato fecha hoy: ${fechahoyFormateada}`);
                             <strong>📚 Sesión Padre:</strong> {tarea.sesionPadre.nombre}
                           </div>
                           <div>
-                            <strong>🎯 Examen:</strong> {new Date(tarea.sesionPadre.fecha_examen).toLocaleDateString()}
+                            <strong>🎯 Examen:</strong> {new Date(tarea.sesionPadre.fecha_examen).toLocaleDateString('es-ES', { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
                           </div>
                         </div>
                       </div>

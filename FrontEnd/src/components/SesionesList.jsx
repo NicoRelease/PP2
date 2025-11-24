@@ -273,9 +273,19 @@ console.log(`Formato fecha formateada: ${fechaTareaFormateada}`);
                         <div style={{ display: 'grid', gap: '4px', fontSize: '13px', color: '#666' }}>
                           <div>
                             <strong>🗓️ Fecha programada:</strong> 
-                            {new Date(fechaTarea).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {new Date(fechaTarea).toLocaleDateString('es-ES', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
                           </div>
-                          <div><strong>🎯 Examen:</strong> {new Date(sesion.fecha_examen).toLocaleDateString()}</div>
+                          <div><strong>🎯 Examen:</strong> {new Date(sesion.fecha_examen).toLocaleDateString('es-ES', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</div>
                         </div>
                       </div>
 
