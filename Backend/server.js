@@ -1,86 +1,181 @@
-const express = require('express');
-const cors = require('cors');
-const db = require('./models');
-const path = require('path');
-const fs = require('fs');
+import express from "express";
+import http from "http";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import { WebSocketServer } from "ws";
+import os from "os";
+import fs from "fs";
+import sesionesRouter from './routes/Sesiones.routes.js';
 
-const app = express();
+import { handleAuth } from "./modules/auth.js";
 
-// Crear carpeta database si no existe
-const databaseDir = path.join(__dirname, 'database');
-if (!fs.existsSync(databaseDir)) {
-  fs.mkdirSync(databaseDir, { recursive: true });
-  console.log('📁 Carpeta database creada');
+import { logEvent } from "./util/logger.js";
+import logger from "./util/logger.js";
+import { decrypt } from "./util/crypto.js";
+
+// config inicial
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const APP_PORT = process.env.PORT_HTTP || "3001";
+
+//carpeta log
+const logsPath = path.resolve("../server", "logs");
+if (!fs.existsSync(logsPath)) {
+  fs.mkdirSync(logsPath, { recursive: true });
+  logger.info(`Carpeta creada: ${logsPath}`);
+} else {
+  logger.info(`Carpeta existente: ${logsPath}`);
 }
 
-// Middlewares
-app.use(cors());
+// ip local del servidor
+const getLocalIp = () => {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === "IPv4" && !iface.internal) return iface.address;
+    }
+  }
+  return "127.0.0.1";
+};
+
+const localIp = getLocalIp();
+logger.info(`IP local del servidor: ${localIp}`);
+
+
+const app = express();
 app.use(express.json());
 
-// Logging de requests
+// CORS
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  res.header("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   next();
 });
 
-// Inicialización de la BD
-const inicializarBD = async () => {
-  try {
-    // TEMPORAL: Usar force: true para recrear tablas con las nuevas asociaciones
-    // Luego cambiar a false
-    const force = false; // Cambiar a false después del primer run
-    
-    await db.sequelize.authenticate();
-    console.log('✅ Conexión a la base de datos establecida');
-    
-    await db.sequelize.sync({ force });
-    console.log(`✅ Base de datos sincronizada (force: ${force})`);
-    
-  } catch (error) {
-    console.error('❌ Error al inicializar la base de datos:', error);
-    process.exit(1);
-  }
-};
+//Rutas
+app.use('/api', sesionesRouter);
+//Login
+app.post("/login", (req, res) => {
+  const { encryptedUser, encryptedPassword } = req.body;
+  logger.info("Pasó por la etapa de encriptación", {
+    encryptedUser,
+    encryptedPassword,
+  });
 
-// Rutas
-app.use('/api', require('./routes/Sesiones.routes'));
+  if (!encryptedUser || !encryptedPassword)
+    return res.status(400).json({ error: "Datos cifrados requeridos" });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+  const user = decrypt(encryptedUser);
+  const password = decrypt(encryptedPassword);
+
+  if (!user || !password)
+    return res.status(400).json({ error: "Usuario y contraseña requeridos" });
+
+  const token = handleAuth.authenticateUser(user, password);
+  if (!token) return res.status(401).json({ error: "Credenciales inválidas" });
+
+  res.json({ token });
+});
+
+// Verificación de token JWT
+app.post("/token/verify", (req, res) => {
+  const { token } = req.body;
+  res.json(handleAuth.verifyToken(token));
+});
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+handleAuth.init(process.env.JWT_SECRET);
+
+
+
+// Conexión WebSocket
+wss.on("connection", (ws, req) => {
+  const ip = req.socket.remoteAddress;
+  const port = req.socket.remotePort;
+
+  addClient(ws);
+  logEvent("CONNECT", null, ip, port, "Nuevo WS cliente conectado");
+
+  ws.send(
+    JSON.stringify({
+      type: "system",
+      body: "Bienvenido! Envía {type:'auth', token:'...'} para autenticarte.",
+    })
+  );
+
+  ws.on("message", (raw) => {
+    let msgObj;
+    try {
+      msgObj = JSON.parse(raw.toString());
+    } catch {
+      ws.send(JSON.stringify({ type: "error", body: "JSON inválido" }));
+      return;
+    }
+
+    const client = getClientInfo(ws);
+
+    if (msgObj.type === "auth") {
+      handleAuth.processAuth(ws, msgObj);
+      return;
+    }
+
+    if (!client?.user) {
+      ws.send(
+        JSON.stringify({ type: "error", body: "Debes autenticarte primero." })
+      );
+      return;
+    }
+
+    switch (msgObj.type) {
+      case "command":
+        handleCommand(ws, client, msgObj.command, roomsManager);
+        break;
+      case "private":
+        handlePrivateMessage(
+          ws,
+          client,
+          msgObj.to,
+          msgObj.body,
+          msgObj.messageHash
+        );
+        break;
+      case "message":
+        handleBroadcastMessage(ws, client, msgObj.body, msgObj.messageHash);
+        break;
+      default:
+        ws.send(
+          JSON.stringify({ type: "error", body: "Tipo de mensaje desconocido" })
+        );
+    }
+  });
+
+  ws.on("close", () => {
+    const client = getClientInfo(ws);
+    if (client) {
+      logEvent(
+        "DISCONNECT",
+        client.user,
+        null,
+        null,
+        `Usuario desconectado: ${client.user}`
+      );
+      if (client.user) roomsManager.cleanupUserRooms(client.user);
+      if (client.room) roomsManager.leaveRoom(ws, client, false);
+    }
+    removeClient(ws);
+  });
+
+  ws.on("error", () => {
+    removeClient(ws);
   });
 });
 
-// Middleware para manejar rutas no encontradas
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    message: 'Ruta no encontrada',
-    endpoint: req.originalUrl,
-    method: req.method
-  });
-});
-
-// Middleware global de manejo de errores
-app.use((error, req, res, next) => {
-  console.error('🔥 Error no manejado:', error);
-  res.status(500).json({ 
-    message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? error.message : 'Contacte al administrador'
-  });
-});
-
-const PORT = process.env.PORT || 3001;
-
-// Iniciar servidor después de inicializar la BD
-inicializarBD().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor Express escuchando en http://localhost:${PORT}`);
-    console.log(`📚 API disponible en http://localhost:${PORT}/api`);
-    console.log(`❤️  Health check - Conectado: http://localhost:${PORT}/health`);
-  });
-}).catch(error => {
-  console.error('❌ No se pudo iniciar el servidor:', error);
+// Iniciar servidor
+server.listen(APP_PORT, () => {
+  logger.info(`Servidor listo → http://${localIp}:${APP_PORT}`);
 });
