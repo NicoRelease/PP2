@@ -1,10 +1,11 @@
 // components/GestorEstudio.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import HeaderNavegacion from './HeaderNavegacion';
 import SesionesList from './SesionesList';
 import TareasPorFecha from './TareasPorFecha';
+
 
 const GestorEstudio = () => {
   const [vistaActual, setVistaActual] = useState('sesiones'); // 'sesiones' o 'fechas'
@@ -138,6 +139,18 @@ const GestorEstudio = () => {
   }
 
   return (
+    <>
+    
+         <header style={{ backgroundColor: '#007bff', color: 'white', padding: '15px', textAlign: 'center', marginBottom: '30px' }}>
+          <h1>🧠 App de gestion de estudio personalizado</h1>
+              <Link to="/" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
+                           🏠 Inicio
+                         </Link>
+             <Link to="/crear-sesion" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
+                          ✍️ Planificar Sesión
+                        </Link>
+        </header>
+    
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header de navegación */}
       <HeaderNavegacion 
@@ -164,6 +177,7 @@ const GestorEstudio = () => {
         />
       )}
     </div>
+    </>
   );
 };
 

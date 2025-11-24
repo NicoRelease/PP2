@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,Link } from 'react-router-dom';
+
 
 const NewSessionForm = ({ onSesionCreada }) => {
   const navigate = useNavigate();
@@ -88,6 +89,16 @@ const NewSessionForm = ({ onSesionCreada }) => {
   const fechaMinima = obtenerFechaMinima();
 
   return (
+    <>
+                <header style={{ backgroundColor: '#007bff', color: 'white', padding: '15px', textAlign: 'center', marginBottom: '30px' }}>
+                    <h1>🧠 App de gestion de estudio personalizado</h1>
+                        <Link to="/" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
+                                     🏠 Inicio
+                                   </Link>
+                        <Link to="/gestor-estudio" style={{ color: 'white', margin: '0 20px', textDecoration: 'none', fontWeight: 'bold' }}>
+                                     📊 Gestor de Estudio
+                                   </Link>
+                  </header>
     <div style={{ 
       padding: '30px', 
       border: '2px solid #007bff', 
@@ -221,6 +232,7 @@ const NewSessionForm = ({ onSesionCreada }) => {
         </div>
       </form>
     </div>
+    </>
   );
 };
 
