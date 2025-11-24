@@ -254,49 +254,7 @@ const TareasPorFecha = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTare
                       marginTop: '12px',
                       justifyContent: 'flex-end'
                     }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!esFechaPasada) {
-                            onGestionarTarea(tarea.id, 'start', e);
-                          }
-                        }}
-                        disabled={esFechaPasada || tarea.es_completada}
-                        style={{
-                          backgroundColor: esFechaPasada || tarea.es_completada ? '#ccc' : '#28a745',
-                          color: 'white',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: '4px',
-                          cursor: (esFechaPasada || tarea.es_completada) ? 'not-allowed' : 'pointer',
-                          fontSize: '11px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        ▶️ Iniciar
-                      </button>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!esFechaPasada) {
-                            onGestionarTarea(tarea.id, 'stop', e);
-                          }
-                        }}
-                        disabled={esFechaPasada || tarea.es_completada}
-                        style={{
-                          backgroundColor: esFechaPasada || tarea.es_completada ? '#ccc' : '#dc3545',
-                          color: 'white',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: '4px',
-                          cursor: (esFechaPasada || tarea.es_completada) ? 'not-allowed' : 'pointer',
-                          fontSize: '11px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        ⏹️ Completar
-                      </button>
+
                       
                       <button
                         onClick={(e) => {

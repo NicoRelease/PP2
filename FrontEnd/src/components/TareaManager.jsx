@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import Conversion from './Conversion';
 
 const TareaManager = () => {
   const { tareaId } = useParams();
@@ -226,9 +227,8 @@ const TareaManager = () => {
           }}>
             <h2>{tarea.nombre}</h2>
 
-            {tarea.tiempo_real_ejecucion && (
-              <div>⏰ Tiempo ejecutado histórico: {tarea.tiempo_real_ejecucion}s</div>
-            )}
+            
+            
           </div>
         )}
 
