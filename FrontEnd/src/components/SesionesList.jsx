@@ -1,9 +1,13 @@
-// components/TareasPorFecha.jsx
+// components/TareasPorSesion.jsx
 import React from 'react';
 import Conversion from './Conversion';
 
 // Añado onDeleteSesion a las props del componente
 const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTarea, onDeleteSession }) => {
+  
+  // 📌 Definir la fecha de hoy para la comparación de vencimiento
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0); // Normalizar a medianoche para comparación
 
   // ============================================================
   // 📌 AGRUPAR TAREAS POR SESIÓN (nuevo comportamiento solicitado)
@@ -110,84 +114,136 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
                 <h4 style={{ margin: 0, color: '#007bff' }}>
                   📘 {sesion.nombre}
                 </h4>
-                
-                {/* Contenedor del tiempo total y el botón de eliminar */}
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    {/* Botón de Eliminar Sesión AÑADIDO AQUÍ */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            // Llamamos a la nueva prop con el ID de la sesión
-                            onDeleteSession(sesion.id, sesion.nombre); 
-                        }}
-                        style={{
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: 'bold'
-                        }}
-                        title={`Eliminar la sesión: ${sesion.nombre}`}
-                    >
-                        🗑️ Borrar Sesión
-                    </button>
-                    
-                    <div style={{
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      padding: '5px 15px',
-                      borderRadius: '15px',
-                      fontWeight: 'bold',
-                      fontSize: '14px'
-                    }}>
-                      {(grupo.totalDuracionEstimada / 60)>1 ? 
-                        `⏱️ Tiempo total de sesión: ${(grupo.totalDuracionEstimada / 60).toFixed(0)} horas` : `⏱️ Tiempo total de sesión: ${(grupo.totalDuracionEstimada / 60).toFixed(0)} hora`}
-                    </div>
-                </div>
+                
+                {/* Contenedor del tiempo total y el botón de eliminar */}
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {/* Botón de Eliminar Sesión */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteSession(sesion.id, sesion.nombre); 
+                        }}
+                        style={{
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: 'bold'
+                        }}
+                        title={`Eliminar la sesión: ${sesion.nombre}`}
+                    >
+                        🗑️ Borrar Sesión
+                    </button>
+                    
+                    <div style={{
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      padding: '5px 15px',
+                      borderRadius: '15px',
+                      fontWeight: 'bold',
+                      fontSize: '14px'
+                    }}>
+                      {(grupo.totalDuracionEstimada / 60) > 1 ? 
+                        `⏱️ Tiempo total de sesión: ${(grupo.totalDuracionEstimada / 60).toFixed(0)} horas` : `⏱️ Tiempo total de sesión: ${(grupo.totalDuracionEstimada / 60).toFixed(0)} hora`}
+                    </div>
+                </div>
               </div>
 
               {/* Tareas de la sesión */}
               <div style={{ display: 'grid', gap: '12px' }}>
-                {grupo.tareas.map((tarea) => (
-                  <div
-                    key={tarea.id}
-                    style={{
-                      border: '1px solid #ddd',
-                      padding: '15px',
-                      borderRadius: '6px',
-                      backgroundColor: tarea.es_completada ? '#f8fff8' : '#fff',
-                      transition: 'all 0.3s ease',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => onTareaClick(tarea, tarea.sesionPadre)}
-                  >
-
+                {grupo.tareas.map((tarea) => {
+                  // 🛑 Lógica para verificar si la tarea está vencida 🛑
+                  const fechaTarea = new Date(tarea.fecha_programada);
+                  fechaTarea.setHours(0, 0, 0, 0);
+                  const esFechaPasada = fechaTarea < hoy;
+                  
+                  return (
+                    <div
+                      key={tarea.id}
+                      style={{
+                        border: '1px solid #ddd',
+                        padding: '15px',
+                        borderRadius: '6px',
+                        backgroundColor: tarea.es_completada ? '#f8fff8' : (esFechaPasada ? '#f8f9fa' : '#fff'),
+                        transition: 'all 0.3s ease',
+                        cursor: esFechaPasada && !tarea.es_completada ? 'not-allowed' : 'pointer', // 🛑 Deshabilitar cursor
+                        position: 'relative',
+                        opacity: esFechaPasada && !tarea.es_completada ? 0.6 : 1 // 🛑 Reducir opacidad si está vencida y pendiente
+                      }}
+                      // 🛑 Bloquear la acción onClick si está vencida y pendiente 🛑
+                      onClick={() => {
+                        if (!esFechaPasada && !tarea.es_completada) {
+                          onTareaClick(tarea, tarea.sesionPadre);
+                        } else if (tarea.es_completada) {
+                          // Opcional: permitir clic para ver detalles si está completada
+                          onTareaClick(tarea, tarea.sesionPadre); 
+                        }
+                      }}
+                    >
+                      {/* 🛑 Overlay para fechas pasadas y no completadas 🛑 */}
+                      {esFechaPasada && !tarea.es_completada && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: 'rgba(255,255,255,0.7)',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 10
+                        }}>
+                          <div style={{
+                            backgroundColor: '#6c757d',
+                            color: 'white',
+                            padding: '5px 15px',
+                            borderRadius: '15px',
+                            fontSize: '12px',
+                            fontWeight: 'bold'
+                          }}>
+                            ⏰ Fecha pasada - No disponible
+                          </div>
+                        </div>
+                    )}
+                    
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       
                       <div style={{ flex: 1 }}>
                         <h5 style={{
                           margin: '0 0 8px',
-                          color: tarea.es_completada ? '#28a745' : '#333',
+                          color: tarea.es_completada ? '#28a745' : (esFechaPasada ? '#6c757d' : '#333'), // 🛑 Color si está vencida
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px'
                         }}>
-                          {tarea.es_completada ? '✅' : '📝'} {tarea.nombre}
+                          <span style={{ 
+                            fontSize: '18px',
+                            color: tarea.es_completada ? '#28a745' : (esFechaPasada ? '#6c757d' : '#ffc107')
+                          }}>
+                            {tarea.es_completada ? '✅' : (esFechaPasada ? '⏰' : '📝')}
+                          </span> 
+                          {tarea.nombre}
                         </h5>
 
-                        <div style={{ fontSize: '13px', color: '#666' }}>
-                          <div><strong>🎯 Examen:</strong> {new Date(sesion.fecha_examen).toLocaleDateString()}</div>
+                        <div style={{ display: 'grid', gap: '4px', fontSize: '13px', color: '#666' }}>
+                          <div>
+                            <strong>🗓️ Fecha programada:</strong> 
+                            {new Date(tarea.fecha_programada).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </div>
+                          <div><strong>🎯 Examen:</strong> {new Date(sesion.fecha_examen).toLocaleDateString()}</div>
+                        </div>
                       </div>
 
                       <div style={{ textAlign: 'right', minWidth: '120px' }}>
                         <div style={{
                           fontSize: '16px',
                           fontWeight: 'bold',
-                          color: tarea.es_completada ? '#28a745' : '#ffc107',
+                          color: tarea.es_completada ? '#28a745' : (esFechaPasada ? '#6c757d' : '#ffc107'), // 🛑 Color si está vencida
                           marginBottom: '5px'
                         }}>
                           {tarea.duracion_estimada} min
@@ -196,25 +252,27 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
                         <div style={{
                           fontSize: '12px',
                           padding: '3px 8px',
-                          backgroundColor: '#f8f9fa',
+                          backgroundColor: tarea.es_completada ? '#e8f5e8' : (esFechaPasada ? '#f8f9fa' : '#f8f9fa'), // 🛑 Color de fondo si está vencida
                           borderRadius: '12px',
                           display: 'inline-block',
-                          color: tarea.es_completada ? '#28a745' : '#999'
+                          color: tarea.es_completada ? '#28a745' : (esFechaPasada ? '#6c757d' : '#999') // 🛑 Color de texto si está vencida
                         }}>
                           {tarea.es_completada ?
                             `Tiempo real: ${Conversion(tarea.tiempo_real_ejecucion)}` :
-                            '⏳ Pendiente'}
+                            (esFechaPasada ? '⏰ Vencida' : '⏳ Pendiente')} 
                         </div>
                       </div>
                     </div>
 
-                    {/* Botones */}
+                    {/* Botones de acción - Deshabilitados para tareas vencidas y no completadas */}
                     <div style={{
                       display: 'flex',
                       gap: '8px',
                       marginTop: '12px',
                       justifyContent: 'flex-end'
                     }}>
+                      
+                      {/* Botón Eliminar Tarea (se mantiene activo, ya que puedes eliminar una tarea vencida) */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -235,8 +293,38 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
                       </button>
                     </div>
 
+                    {/* 🛑 Mensaje para tareas vencidas y no completadas 🛑 */}
+                    {!tarea.es_completada && esFechaPasada && (
+                      <div style={{ 
+                        marginTop: '10px', 
+                        padding: '8px', 
+                        backgroundColor: '#fff3cd', 
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        color: '#856404',
+                        border: '1px solid #ffeaa7',
+                        textAlign: 'center'
+                      }}>
+                        ⚠️ Tarea vencida - No puede ser gestionada como pendiente.
+                      </div>
+                    )}
+                    
+                    {tarea.es_completada && (
+                      <div style={{ 
+                        marginTop: '10px', 
+                        padding: '5px', 
+                        backgroundColor: '#e7f3ff', 
+                        borderRadius: '3px',
+                        fontSize: '11px',
+                        color: '#0066cc',
+                        textAlign: 'center'
+                      }}>
+                        💡 Tarea completada - Haz clic para ver detalles
+                      </div>
+                    )}
                   </div>
-                ))}
+                );
+              })}
               </div>
             </div>
           );
@@ -314,7 +402,7 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
           }}>
             <strong style={{ color: '#007bff' }}>💡 Consejo:</strong>
             <p style={{ margin: '5px 0 0 0' }}>
-              Ahora puedes ver todas tus tareas organizadas por sesión para controlar mejor tu rutina de estudio.
+              Las tareas **vencidas** (fecha programada anterior a hoy) y **pendientes** se marcan como no gestionables.
             </p>
           </div>
 
