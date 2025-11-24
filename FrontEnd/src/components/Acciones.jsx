@@ -26,7 +26,7 @@ export const manejarAccion = async (accion) => {
         setTiempoTranscurrido(0);
       }
 
-      alert(`Tarea ${accion} exitosamente`);
+      //alert(`Tarea ${accion} exitosamente`);
 
     } catch (err) {
       alert('Error al gestionar tarea: ' + (err.response?.data?.message || err.message));

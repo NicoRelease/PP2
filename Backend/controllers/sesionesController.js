@@ -301,7 +301,7 @@ exports.gestionarTarea = async (req, res) => {
         });
 
         res.status(200).json({ 
-            message: `Tarea ${action} exitosamente`,
+            //message: `Tarea ${action} exitosamente`,
             tarea: tareaActualizada 
         });
 

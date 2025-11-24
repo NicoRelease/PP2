@@ -101,7 +101,7 @@ const GestorEstudio = () => {
       });
       
       console.log('✅ Tarea gestionada:', response.data);
-      alert(`Tarea ${action} exitosamente`);
+      //alert(`Tarea ${action} exitosamente`);
       fetchSesiones();
     } catch (err) {
       const errorMsg = 'Error al gestionar tarea: ' + (err.response?.data?.message || 'Error desconocido');
