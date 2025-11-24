@@ -154,8 +154,7 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
 
                         <div style={{ fontSize: '13px', color: '#666' }}>
                           <div><strong>🎯 Examen:</strong> {new Date(sesion.fecha_examen).toLocaleDateString()}</div>
-                          <div><strong>⚡ Dificultad:</strong> Nivel {tarea.dificultad_nivel || 3}</div>
-                        </div>
+                          </div>
                       </div>
 
                       <div style={{ textAlign: 'right', minWidth: '120px' }}>

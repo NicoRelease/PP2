@@ -217,9 +217,6 @@ const TareasPorFecha = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTare
                           <div>
                             <strong>🎯 Examen:</strong> {new Date(tarea.sesionPadre.fecha_examen).toLocaleDateString()}
                           </div>
-                          <div>
-                            <strong>⚡ Dificultad:</strong> Nivel {tarea.dificultad_nivel || 3}
-                          </div>
                         </div>
                       </div>
                       
