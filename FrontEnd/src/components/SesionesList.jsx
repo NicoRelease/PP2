@@ -7,7 +7,23 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
   
   // 📌 Definir la fecha de hoy para la comparación de vencimiento
   const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0); // Normalizar a medianoche para comparación
+
+// Obtener el año
+const año = hoy.getFullYear();
+
+// Obtener el mes (getMonth() devuelve 0-11, así que sumamos 1)
+// Usamos padStart(2, '0') para asegurar dos dígitos
+const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+
+// Obtener el día del mes
+// Usamos padStart(2, '0') para asegurar dos dígitos
+const dia = String(hoy.getDate()).padStart(2, '0');
+
+// Concatenar para obtener el formato yyyy-mm-dd
+const fechahoyFormateada = `${año}-${mes}-${dia}`;
+
+console.log(`Formato fecha hoy: ${fechahoyFormateada}`);
+// Ejemplo de salida: "2025-11-24" (si hoy es 24 de noviembre de 2025)
 
   // ============================================================
   // 📌 AGRUPAR TAREAS POR SESIÓN (nuevo comportamiento solicitado)
@@ -156,9 +172,29 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
               <div style={{ display: 'grid', gap: '12px' }}>
                 {grupo.tareas.map((tarea) => {
                   // 🛑 Lógica para verificar si la tarea está vencida 🛑
-                  const fechaTarea = new Date(tarea.fecha_programada);
-                  fechaTarea.setHours(0, 0, 0, 0);
-                  const esFechaPasada = fechaTarea < hoy;
+                  //const fechaTarea = new Date(tarea.fecha_programada);
+                  //fechaTarea.setHours(0, 0, 0, 0);
+const fechaString= tarea.fecha_programada;
+const fechaTarea = new Date(`${fechaString}T12:00:00`);
+console.log (`FechaProgramada: ${tarea.fecha_programada}`);
+console.log(`FechaTarea: ${fechaTarea}`);
+
+// Obtener el año
+const año = fechaTarea.getFullYear();
+
+// Obtener el mes (getMonth() devuelve 0-11, así que sumamos 1)
+// Usamos padStart(2, '0') para asegurar dos dígitos
+const mes = String(fechaTarea.getMonth() + 1).padStart(2, '0');
+// Obtener el día del mes
+// Usamos padStart(2, '0') para asegurar dos dígitos
+const dia = String(fechaTarea.getDate()).padStart(2, '0');
+
+// Concatenar para obtener el formato yyyy-mm-dd
+const fechaTareaFormateada = `${año}-${mes}-${dia}`;
+
+console.log(`Formato fecha formateada: ${fechaTareaFormateada}`);
+// Ejemplo de salida: "2025-11-24" (si hoy es 24 de noviembre de 2025)
+                  const esFechaPasada = fechaTareaFormateada < fechahoyFormateada;
                   
                   return (
                     <div
@@ -233,7 +269,7 @@ const TareasPorSesion = ({ sesiones, onTareaClick, onDeleteTarea, onGestionarTar
                         <div style={{ display: 'grid', gap: '4px', fontSize: '13px', color: '#666' }}>
                           <div>
                             <strong>🗓️ Fecha programada:</strong> 
-                            {new Date(tarea.fecha_programada).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {new Date(fechaTarea).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </div>
                           <div><strong>🎯 Examen:</strong> {new Date(sesion.fecha_examen).toLocaleDateString()}</div>
                         </div>
